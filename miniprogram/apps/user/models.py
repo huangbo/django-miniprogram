@@ -28,7 +28,7 @@ class User(TimeStampedModel):
         (EDU_OTHER, "其他"),
     )
 
-    # married
+    # MARRIED
     MARRIED = "yes"
     MARRIED_NO = "no"
     MARRIED_UNKNOWN = "unknown"
@@ -36,6 +36,14 @@ class User(TimeStampedModel):
         (MARRIED, "已婚"),
         (MARRIED_NO, "未婚"),
         (MARRIED_UNKNOWN, "未知"),
+    )
+
+    # STATUS
+    STATUS_VALIDATED = 1
+    STATUS_INVALIDATED = 0
+    STATUS_CHOICE = (
+        (STATUS_VALIDATED, "validated"),
+        (MARRIED_NO, "invalidated"),
     )
 
     name = models.CharField(max_length=150, default="", blank=True)
@@ -51,13 +59,39 @@ class User(TimeStampedModel):
     mobile_verified = models.BooleanField(default=False)
     email = models.CharField(max_length=80, null=True, unique=True)  # unique and empty-string
     email_verified = models.BooleanField(default=False)
-    identity = models.CharField(max_length=80, null=True, unique=True)
+    identity = models.CharField(max_length=80, null=True, unique=True)  # unique and empty-string
     identity_verified = models.BooleanField(default=False)
 
     subscribed = models.BooleanField(default=False, blank=True)
     channel = models.CharField(max_length=150, default="", blank=True)
 
     last_login = models.DateTimeField()
+    status = models.IntegerField(choices=STATUS_CHOICE, default=STATUS_VALIDATED, blank=True)
+
+    class Meta:
+        app_label = "user"
+
+
+class WechatAccount(models.Model):
+    wechat_open_id = models.CharField(max_length=190, primary_key=True)
+    wechat_unionid = models.CharField(max_length=255, default=' ')
+    user = models.OneToOneField(User, related_name='wechat_account')
+
+    class Meta:
+        app_label = "user"
+
+
+class WeiboAccount(models.Model):
+    weibo_open_id = models.CharField(max_length=190, primary_key=True)
+    user = models.OneToOneField(User, related_name='weibo_account')
+
+    class Meta:
+        app_label = "user"
+
+
+class QQAccount(models.Model):
+    weibo_open_id = models.CharField(max_length=190, primary_key=True)
+    user = models.OneToOneField(User, related_name='qq_account')
 
     class Meta:
         app_label = "user"
