@@ -1,0 +1,2 @@
+ERR_SUCCESS = (0, "SUCCESS")
+ERR_FAIL = (-1, "SUCCESS")
