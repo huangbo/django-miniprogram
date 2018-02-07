@@ -33,15 +33,15 @@ class RedisCache(object):
     def redis_get_key(self, key):
         return self.raw_redis_connection.get(key)
 
-    @redis_expire
     def redis_set_key(self, key, value, timeout=None):
-        return self.raw_redis_connection.set(key, value)
+        ret = self.raw_redis_connection.set(key, value)
+        self.raw_redis_connection.expire(key, timeout)
+        return ret
 
     # redis set wrap
     def redis_get_set(self, key):
         return self.raw_redis_connection.smembers(key)
 
-    @redis_expire
     def redis_add_to_set(self, key, values, timeout=None):
         if isinstance(values, list):
             self.raw_redis_connection.sadd(key, *values)

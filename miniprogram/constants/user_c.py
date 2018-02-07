@@ -1,3 +1,8 @@
+# web sign up way
+
+USER_SIGN_UP_WAY_KEY = "sign_up_way"
+USER_SIGN_UP_WAY_MOBILE = "mobile"
+
 # user terminal
 SOURCE_WECHAT = "wechat"
 

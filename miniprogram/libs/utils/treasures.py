@@ -14,3 +14,11 @@ def get_request_ip(request):
 def generate_32_uuid():
     session_key = uuid.uuid1()
     return str(session_key).replace("-", "")
+
+
+def str_byte_cmp(fu, ck, encoding="utf8"):
+    if isinstance(fu, bytes):
+        fu = fu.decode(encoding)
+    if isinstance(ck, bytes):
+        ck = ck.decode(encoding)
+    return fu == ck

@@ -52,9 +52,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'expand.middlewares.user.UserForceLogoutMiddleware',
 ]
 
-ROOT_URLCONF = 'miniprogram.urls'
+
+ROOT_URLCONF = 'xuetangx.urls'
 
 TEMPLATES = [
     {
@@ -164,6 +166,8 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
 
     ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
 }
 
 

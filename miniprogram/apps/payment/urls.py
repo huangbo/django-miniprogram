@@ -1,7 +1,6 @@
-from django.conf.urls import include, url
-
+from django.conf.urls import url
+from apps.payment.views.payment_views import PaymentView
 
 urlpatterns = [
-    url(r'^user/', include('apps.user.urls', namespace="user")),
-    url(r'^payment/', include('apps.payment.urls', namespace="payment")),
+    url(r'', PaymentView.as_view(), name='mini-program-payment'),
 ]

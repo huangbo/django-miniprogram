@@ -52,7 +52,10 @@ class MiniProgram(object):
         cipher = AES.new(session_key, AES.MODE_CBC, iv)
 
         unpad = lambda s: s[:-ord(s[len(s) - 1:])]
-        decrypted = json.loads(unpad(cipher.decrypt(encrypted_data)))
+        try:
+            decrypted = json.loads(unpad(cipher.decrypt(encrypted_data)))
+        except:
+            raise Exception('Invalid Buffer')
 
         if decrypted['watermark']['appid'] != self.appid:
             raise Exception('Invalid Buffer')

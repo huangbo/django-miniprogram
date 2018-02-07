@@ -62,8 +62,6 @@ class User(AbstractUser, TimeStampedModel):
     career = models.CharField(max_length=150, default="", blank=True)
     married = models.CharField(max_length=10, choices=user_c.MARRIED_CHOICE, default=user_c.MARRIED_UNKNOWN, blank=True)
 
-    mobile = models.CharField(max_length=12, null=True, unique=True)  # unique and empty-string
-    mobile_verified = models.BooleanField(default=False)
     email = models.CharField(max_length=80, null=True, unique=True)  # unique and empty-string
     email_verified = models.BooleanField(default=False)
     identity = models.CharField(max_length=80, null=True, unique=True)  # unique and empty-string
@@ -76,8 +74,26 @@ class User(AbstractUser, TimeStampedModel):
     status = models.IntegerField(choices=user_c.STATUS_CHOICE, default=user_c.STATUS_VALID, blank=True)
 
     @property
+    def has_wechat_account(self):
+        return hasattr(self, "wechat_account")
+
+    @property
+    def has_mobile_account(self):
+        return hasattr(self, "mobile_account")
+
+    @property
     def wechat_openid(self):
-        return self.wechat_account.openid
+        if self.has_wechat_account:
+            return self.wechat_account.openid
+        else:
+            return ""
+
+    @property
+    def mobile(self):
+        if self.has_mobile_account:
+            return self.mobile_account.mobile
+        else:
+            return ""
 
     @classmethod
     def user_login(cls, request, login_user):
@@ -119,16 +135,20 @@ class WechatAccount(TimeStampedModel):
     session_key = models.CharField(max_length=255, default='')
 
     user = models.OneToOneField(User, related_name='wechat_account')
+    origin_user = models.OneToOneField(User, related_name="wechat_account_origin")
 
     @classmethod
     def create_wechat_user(cls, openid, unionid, session_key):
-        if cls.objects.filter(unionid=unionid, openid=openid).exists():
-            return True
-        # todo transaction
-        new_user = User(username=str(int(time.time())), last_login=timezone.now())
-        new_user.save()
-        new_wechat = cls(openid=openid, unionid=unionid, session_key=session_key, user=new_user)
-        new_wechat.save()
+        try:
+            wechat_user = cls.objects.get(unionid=unionid, openid=openid)
+        except cls.DoesNotExist as e:
+            # todo transaction
+            new_user = User(username=str(int(time.time())), last_login=timezone.now())
+            new_user.save()
+            wechat_user = cls(openid=openid, unionid=unionid, session_key=session_key, user=new_user, origin_user=new_user)
+            wechat_user.save()
+            # todo make sure save wechat user info : display name, avatar ...
+        return wechat_user.user
 
     @classmethod
     def mini_program_login(cls, mini_program_session_key, session_info):
@@ -140,17 +160,38 @@ class WechatAccount(TimeStampedModel):
         app_label = "user"
 
 
-class WeiboAccount(TimeStampedModel):
-    openid = models.CharField(max_length=190, primary_key=True)
-    user = models.OneToOneField(User, related_name='weibo_account')
+class MobileAccount(TimeStampedModel):
+    mobile = models.CharField(max_length=12, null=True, unique=True)  # unique and empty-string
 
-    class Meta:
-        app_label = "user"
+    user = models.OneToOneField(User, related_name='mobile_account')
+    origin_user = models.OneToOneField(User, related_name="mobile_account_origin")
 
+    @classmethod
+    def create_mobile_user(cls, mobile):
+        try:
+            mobile_user = cls.objects.get(mobile=mobile)
+        except cls.DoesNotExist as e:
+            new_user = User(username=str(int(time.time())), last_login=timezone.now())
+            new_user.save()
+            mobile_user = cls(mobile=mobile, user=new_user, origin_user=new_user)
+            mobile_user.save()
+        return mobile_user.user
 
-class QQAccount(TimeStampedModel):
-    openid = models.CharField(max_length=190, primary_key=True)
-    user = models.OneToOneField(User, related_name='qq_account')
+    @classmethod
+    def mobile_binder(cls, user, mobile):
+        if not isinstance(user, User):
+            return False
+        # todo auto check all account
+        if user.has_wechat_account and user.has_mobile_account:
+            return False
+        try:
+            mobile_user = cls.objects.get(mobile=mobile)
+            mobile_user.user = user
+        except cls.DoesNotExist as e:
+            print(e)
+            mobile_user = cls(mobile=mobile, user=user, origin_user=user)
+        mobile_user.save()
+        return True
 
     class Meta:
         app_label = "user"
