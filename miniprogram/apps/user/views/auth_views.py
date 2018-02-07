@@ -20,7 +20,7 @@ class UserAccessView(GenericAPIView):
         if session_key and openid:
             WechatAccount.create_wechat_user(openid=openid, unionid=unionid, session_key=session_key)
             mini_program_session_key = mini_program.session_key()
-            User.mini_program_login(mini_program_session_key, session_info)
+            WechatAccount.mini_program_login(mini_program_session_key, session_info)
             return Response({"retCode": "success", "mini_program_session_key": mini_program_session_key}, status.HTTP_200_OK)
         else:
             return Response({"retCode": "fail"}, status.HTTP_200_OK)
@@ -31,7 +31,7 @@ class UserInfoView(GenericAPIView):
         encrypted_data = request.GET.get("encryptedData", "")
         iv = request.GET.get("iv", "")
 
-        session_key = "qxOGREzE++ZY3bUQEv80tQ=="
+        session_key = "mgqaOqZv3j47m2dRhWIz9w=="
 
         crypt = MiniProgram()
         user_info = crypt.decrypt(encrypted_data, iv, session_key)

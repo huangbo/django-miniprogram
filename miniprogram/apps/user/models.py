@@ -1,13 +1,14 @@
 import time
 from django.db import models
-from django_extensions.db.models import TimeStampedModel
-from constants import user_c
 from django.contrib.auth.base_user import AbstractBaseUser
-from django.contrib.auth.models import UserManager
+from django.contrib.auth.models import UserManager, AnonymousUser
 from django.contrib.auth import login, logout
 from django.utils import timezone
 from django.conf import settings
+from django_extensions.db.models import TimeStampedModel
 from libs.cache.redis_cache import RedisCache
+from constants import user_c
+
 # Create your models here.
 
 
@@ -74,33 +75,45 @@ class User(AbstractUser, TimeStampedModel):
     last_login = models.DateTimeField(null=True)
     status = models.IntegerField(choices=user_c.STATUS_CHOICE, default=user_c.STATUS_VALID, blank=True)
 
+    @property
+    def wechat_openid(self):
+        return self.wechat_account.openid
+
     @classmethod
     def user_login(cls, request, login_user):
+        # for session auth
         if isinstance(login_user, cls):
             login(request, login_user)
             request.session.set_expiry(0)
         else:
-            print("login fail")
             return False
-        print("login success")
         return True
 
     @classmethod
     def user_logout(cls, request):
+        # for session auth
         logout(request)
         return True
 
     @classmethod
-    def mini_program_login(cls, mini_program_session_key, session_info):
-        redis_cache = RedisCache(settings.REDIS_DB_SESSION)
-        redis_cache.redis_m_add_to_hash(mini_program_session_key, session_info)
+    def get_user(cls, mini_program_session_key=""):
+        if mini_program_session_key:
+            redis_cache = RedisCache(settings.REDIS_DB_SESSION)
+            mini_program_session = redis_cache.redis_m_get_hash(mini_program_session_key)
+            unionid = mini_program_session.get(b"unionid", '')
+            openid = mini_program_session.get(b"openid", '')
+            try:
+                return WechatAccount.objects.get(unionid=unionid, openid=openid).user
+            except WechatAccount.DoesNotExist as e:
+                return AnonymousUser()
+        return AnonymousUser()
 
     class Meta(AbstractUser.Meta):
         swappable = 'AUTH_USER_MODEL'
         app_label = "user"
 
 
-class WechatAccount(models.Model):
+class WechatAccount(TimeStampedModel):
     openid = models.CharField(max_length=190, primary_key=True)
     unionid = models.CharField(max_length=255, default='')
     session_key = models.CharField(max_length=255, default='')
@@ -109,19 +122,25 @@ class WechatAccount(models.Model):
 
     @classmethod
     def create_wechat_user(cls, openid, unionid, session_key):
-        # TODO
         if cls.objects.filter(unionid=unionid, openid=openid).exists():
             return True
-        new_user = User(username=str(int(time.time())), last_login=timezone.datetime.now())
+        # todo transaction
+        new_user = User(username=str(int(time.time())), last_login=timezone.now())
         new_user.save()
         new_wechat = cls(openid=openid, unionid=unionid, session_key=session_key, user=new_user)
         new_wechat.save()
+
+    @classmethod
+    def mini_program_login(cls, mini_program_session_key, session_info):
+        # for mini-program login
+        redis_cache = RedisCache(settings.REDIS_DB_SESSION)
+        redis_cache.redis_m_add_to_hash(mini_program_session_key, session_info)
 
     class Meta:
         app_label = "user"
 
 
-class WeiboAccount(models.Model):
+class WeiboAccount(TimeStampedModel):
     openid = models.CharField(max_length=190, primary_key=True)
     user = models.OneToOneField(User, related_name='weibo_account')
 
@@ -129,7 +148,7 @@ class WeiboAccount(models.Model):
         app_label = "user"
 
 
-class QQAccount(models.Model):
+class QQAccount(TimeStampedModel):
     openid = models.CharField(max_length=190, primary_key=True)
     user = models.OneToOneField(User, related_name='qq_account')
 

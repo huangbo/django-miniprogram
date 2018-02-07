@@ -1,15 +1,3 @@
-# -*-coding: utf-8 -*-
-# !/usr/bin/env python
-
-"""
-File:   client.py
-Author: goodspeed
-Email:  cacique1103@gmail.com
-Github: https://github.com/zongxiao
-Date:   2015-02-11
-Description: Weixin helpers
-"""
-
 import sys
 import datetime
 from hashlib import sha1
@@ -207,6 +195,9 @@ def force_bytes(s, encoding='utf-8', strings_only=False, errors='strict'):
 if six.PY3:
     smart_str = smart_text
     force_str = force_text
+
+    smart_unicode = smart_text
+    force_unicode = force_text
 else:
     smart_str = smart_bytes
     force_str = force_bytes

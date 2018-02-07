@@ -1,10 +1,10 @@
 import requests
 import base64
 import json
-import uuid
 from Crypto.Cipher import AES
 from six.moves.urllib.parse import urlencode
 from constants.wechat_c import USE_MINI_PROGRAM
+from libs.utils.treasures import generate_32_uuid
 
 
 class MiniProgram(object):
@@ -14,11 +14,7 @@ class MiniProgram(object):
         self.appid = use_mini_program.get("appid", "")
         self.app_secret = use_mini_program.get("app_secret", "")
 
-    def _unpad(self, s):
-        return s[:-ord(s[len(s)-1:])]
-
     def _data_for_exchange(self, js_code, scope=None):
-
         iteritems = lambda d, *args, **kwargs: iter(d.items(*args, **kwargs))
 
         app_params = {
@@ -41,11 +37,10 @@ class MiniProgram(object):
         access_token_url = self._data_for_exchange(js_code=js_code, scope=scope)
         try:
             response = requests.get(access_token_url)
-        except:
-            raise
+        except BaseException as e:
+            raise Exception(e)
 
         parsed_content = json.loads(response.content.decode())
-        print(parsed_content)
         return parsed_content
 
     def decrypt(self, encrypted_data, iv, session_key):
@@ -56,7 +51,8 @@ class MiniProgram(object):
 
         cipher = AES.new(session_key, AES.MODE_CBC, iv)
 
-        decrypted = json.loads(self._unpad(cipher.decrypt(encrypted_data)))
+        unpad = lambda s: s[:-ord(s[len(s) - 1:])]
+        decrypted = json.loads(unpad(cipher.decrypt(encrypted_data)))
 
         if decrypted['watermark']['appid'] != self.appid:
             raise Exception('Invalid Buffer')
@@ -65,6 +61,5 @@ class MiniProgram(object):
 
     @classmethod
     def session_key(cls):
-        session_key = uuid.uuid1()
-        return str(session_key).replace("-", "")
+        return generate_32_uuid()
 
