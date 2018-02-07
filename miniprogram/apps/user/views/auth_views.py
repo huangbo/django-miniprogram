@@ -1,33 +1,45 @@
-from django.shortcuts import redirect
-from django.contrib.auth.decorators import login_required
-from rest_framework.views import APIView
-from django.core.urlresolvers import reverse
 from django.contrib.auth import authenticate
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework import status
-from apps.user.models import User
-from constants import user_c
-
-
-def create_wechat_user(request):
-    wechat_user = User(username="", password="")
-    wechat_user.save()
-    User.user_login(request, wechat_user)
-
-
-# user sign in
-class UserView(APIView):
-    def post(self, request, *args, **kwargs):
-        source = request.POST.get("source")
-        if source == user_c.SOURCE_WECHAT:
-            redirect(reverse("api:user:wechat-user"))
-        else:
-            pass
+from apps.user.models import User, WechatAccount
+from libs.wechat.client import MiniProgram
 
 
 # user sign up
-class UserAccessView(APIView):
+class UserAccessView(GenericAPIView):
+    def get(self, request):
+        js_code = request.GET.get("js_code", "")
+        mini_program = MiniProgram()
+        session_info = mini_program.exchange_code_for_session_key(js_code=js_code)
+        print(session_info)
+
+        session_key = session_info.get("session_key", "")
+        openid = session_info.get("openid", "")
+        unionid = session_info.get("unionid", "")
+        if session_key and openid:
+            WechatAccount.create_wechat_user(openid=openid, unionid=unionid, session_key=session_key)
+            mini_program_session_key = mini_program.session_key()
+            User.mini_program_login(mini_program_session_key, session_info)
+            return Response({"retCode": "success", "mini_program_session_key": mini_program_session_key}, status.HTTP_200_OK)
+        else:
+            return Response({"retCode": "fail"}, status.HTTP_200_OK)
+
+
+class UserInfoView(GenericAPIView):
+    def get(self, request):
+        encrypted_data = request.GET.get("encryptedData", "")
+        iv = request.GET.get("iv", "")
+
+        session_key = "qxOGREzE++ZY3bUQEv80tQ=="
+
+        crypt = MiniProgram()
+        user_info = crypt.decrypt(encrypted_data, iv, session_key)
+        print(user_info)
+        return Response({"retCode": "success"}, status.HTTP_200_OK)
+
+
+class UserView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         username = request.POST.get("username", "")
         password = request.POST.get("password", "")

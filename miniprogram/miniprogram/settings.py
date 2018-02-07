@@ -90,9 +90,19 @@ DATABASES = {
 
 
 # Redis
+REDIS_DB_DEFAULT = "default"
+REDIS_DB_SESSION = "session"
 
 CACHES = {
-    "default": {
+    REDIS_DB_DEFAULT: {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://redis.miniprogram.info:6379/0",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "PASSWORD": "miniprogram",
+        }
+    },
+    REDIS_DB_SESSION: {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://redis.miniprogram.info:6379/1",
         "OPTIONS": {
@@ -148,10 +158,15 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.JSONParser',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'expand.authentication.TokenAuthentication',
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
+
     ),
 }
 
 
 AUTH_USER_MODEL = "user.User"
+
+# !!!!!!!! FOR TEST !!!!!!!!
+USE_X_FORWARDED_HOST = True

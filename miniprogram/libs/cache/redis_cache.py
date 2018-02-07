@@ -55,9 +55,15 @@ class RedisCache(object):
             self.raw_redis_connection.srem(key, 0, values)
 
     # redis sorted set
-    @redis_expire
     def redis_add_to_sorted_set(self, key, name, value, timeout=None):
         self.raw_redis_connection.zadd(key, value, name)
 
     def redis_get_sorted_set(self, key, start, end):
         return self.raw_redis_connection.zrevrange(key, start, end)
+
+    # redis hash map
+    def redis_m_add_to_hash(self, name, mapping, timeout=None):
+        self.raw_redis_connection.hmset(name, mapping)
+
+    def redis_m_get_hash(self, name):
+        return self.raw_redis_connection.hgetall(name)

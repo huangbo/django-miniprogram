@@ -1,9 +1,13 @@
+import time
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
 from constants import user_c
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import UserManager
 from django.contrib.auth import login, logout
+from django.utils import timezone
+from django.conf import settings
+from libs.cache.redis_cache import RedisCache
 # Create your models here.
 
 
@@ -86,22 +90,39 @@ class User(AbstractUser, TimeStampedModel):
         logout(request)
         return True
 
+    @classmethod
+    def mini_program_login(cls, mini_program_session_key, session_info):
+        redis_cache = RedisCache(settings.REDIS_DB_SESSION)
+        redis_cache.redis_m_add_to_hash(mini_program_session_key, session_info)
+
     class Meta(AbstractUser.Meta):
         swappable = 'AUTH_USER_MODEL'
         app_label = "user"
 
 
 class WechatAccount(models.Model):
-    wechat_open_id = models.CharField(max_length=190, primary_key=True)
-    wechat_unionid = models.CharField(max_length=255, default=' ')
+    openid = models.CharField(max_length=190, primary_key=True)
+    unionid = models.CharField(max_length=255, default='')
+    session_key = models.CharField(max_length=255, default='')
+
     user = models.OneToOneField(User, related_name='wechat_account')
+
+    @classmethod
+    def create_wechat_user(cls, openid, unionid, session_key):
+        # TODO
+        if cls.objects.filter(unionid=unionid, openid=openid).exists():
+            return True
+        new_user = User(username=str(int(time.time())), last_login=timezone.datetime.now())
+        new_user.save()
+        new_wechat = cls(openid=openid, unionid=unionid, session_key=session_key, user=new_user)
+        new_wechat.save()
 
     class Meta:
         app_label = "user"
 
 
 class WeiboAccount(models.Model):
-    weibo_open_id = models.CharField(max_length=190, primary_key=True)
+    openid = models.CharField(max_length=190, primary_key=True)
     user = models.OneToOneField(User, related_name='weibo_account')
 
     class Meta:
@@ -109,7 +130,7 @@ class WeiboAccount(models.Model):
 
 
 class QQAccount(models.Model):
-    weibo_open_id = models.CharField(max_length=190, primary_key=True)
+    openid = models.CharField(max_length=190, primary_key=True)
     user = models.OneToOneField(User, related_name='qq_account')
 
     class Meta:
