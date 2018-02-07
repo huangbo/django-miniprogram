@@ -22,7 +22,7 @@ schema_view = get_swagger_view(title='xuetangx API')
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^api/', include('apps.user.urls', namespace="api")),
+    url(r'^api/', include('apps.urls', namespace="api")),
 ]
 
 

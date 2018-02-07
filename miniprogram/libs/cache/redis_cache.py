@@ -1,6 +1,5 @@
 from functools import wraps
 from django_redis import get_redis_connection
-from constants import cache_c
 
 
 # in seconds key being hit, update ttl
@@ -8,7 +7,9 @@ def redis_expire(fun):
     @wraps(fun)
     def _decorator(self, key, *args, **kwargs):
         res = fun(self, key, *args, **kwargs)
-        self.raw_redis_connection.expire(key, cache_c.CACHE_EXPIRE_TIMEOUT)
+        timeout = kwargs.get("timeout")
+        if timeout is not None:
+            self.raw_redis_connection.expire(key, timeout)
         return res
 
     return _decorator
@@ -29,27 +30,24 @@ class RedisCache(object):
     def redis_key_exists(self, key):
         return self.raw_redis_connection.exists(key)
 
-    @redis_expire
     def redis_get_key(self, key):
         return self.raw_redis_connection.get(key)
 
     @redis_expire
-    def redis_set_key(self, key, value):
+    def redis_set_key(self, key, value, timeout=None):
         return self.raw_redis_connection.set(key, value)
 
     # redis set wrap
-    @redis_expire
     def redis_get_set(self, key):
         return self.raw_redis_connection.smembers(key)
 
     @redis_expire
-    def redis_add_to_set(self, key, values):
+    def redis_add_to_set(self, key, values, timeout=None):
         if isinstance(values, list):
             self.raw_redis_connection.sadd(key, *values)
         else:
             self.raw_redis_connection.sadd(key, values)
 
-    @redis_expire
     def redis_remove_from_set(self, key, values):
         if isinstance(values, list):
             self.raw_redis_connection.srem(key, 0, *values)
@@ -58,9 +56,8 @@ class RedisCache(object):
 
     # redis sorted set
     @redis_expire
-    def redis_add_to_sorted_set(self, key, name, value):
+    def redis_add_to_sorted_set(self, key, name, value, timeout=None):
         self.raw_redis_connection.zadd(key, value, name)
 
-    @redis_expire
     def redis_get_sorted_set(self, key, start, end):
         return self.raw_redis_connection.zrevrange(key, start, end)
