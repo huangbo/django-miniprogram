@@ -4,8 +4,8 @@ from django.conf import settings
 mini_program_online = {
     "appid": "****",
     "app_secret": "****",
-    "mch_id": "****",
-    "pay_api_key": "****"
+    "mch_id": "",
+    "pay_api_key": ""
 }
 
 mini_program_develop = {
@@ -16,4 +16,4 @@ mini_program_develop = {
 
 }
 
-USE_MINI_PROGRAM = mini_program_develop if settings.DEBUG else mini_program_online
+USE_MINI_PROGRAM = mini_program_develop if settings.ACCOUNT_DEBUG else mini_program_online

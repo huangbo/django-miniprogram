@@ -7,6 +7,7 @@ from libs.cache.redis_cache import RedisCache
 
 
 class YunPianSMS(object):
+    # todo limit sms send server
 
     def __init__(self):
         self.apikey = sms_c.YUNPIAN_API_KEY

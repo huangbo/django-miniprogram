@@ -23,9 +23,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'r3309o5t3*k4%47cp@aewmuwp1x1s1=e6m7#1fuan!e8@z_iak'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
+ACCOUNT_DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -40,15 +41,18 @@ INSTALLED_APPS = [
     'django_filters',
     'rest_framework',
     'rest_framework_swagger',
+    'corsheaders',
     'apps.user',
     'apps.payment',
 ]
 
 MIDDLEWARE = [
+    'expand.middlewares.csrf.CsrfTokenSkip',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -56,7 +60,7 @@ MIDDLEWARE = [
 ]
 
 
-ROOT_URLCONF = 'xuetangx.urls'
+ROOT_URLCONF = 'miniprogram.urls'
 
 TEMPLATES = [
     {
@@ -96,6 +100,7 @@ DATABASES = {
 REDIS_DB_DEFAULT = "default"
 REDIS_DB_SESSION = "session"
 REDIS_DB_WEB_SESSION = "web-session"
+REDIS_PASSWORD = "miniprogram"
 
 
 CACHES = {
@@ -104,7 +109,7 @@ CACHES = {
         "LOCATION": "redis://redis.miniprogram.info:6379/0",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "PASSWORD": "miniprogram",
+            "PASSWORD": REDIS_PASSWORD,
         }
     },
     REDIS_DB_SESSION: {
@@ -112,7 +117,7 @@ CACHES = {
         "LOCATION": "redis://redis.miniprogram.info:6379/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "PASSWORD": "miniprogram",
+            "PASSWORD": REDIS_PASSWORD,
         }
     },
     REDIS_DB_WEB_SESSION: {
@@ -120,7 +125,7 @@ CACHES = {
         "LOCATION": "redis://redis.miniprogram.info:6379/2",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "PASSWORD": "miniprogram",
+            "PASSWORD": REDIS_PASSWORD,
         }
     },
 }
@@ -166,7 +171,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = '/admin-static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 
 REST_FRAMEWORK = {
@@ -188,5 +194,14 @@ REST_FRAMEWORK = {
 
 AUTH_USER_MODEL = "user.User"
 
-# !!!!!!!! FOR TEST !!!!!!!!
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
+# todo change domain
+if ACCOUNT_DEBUG:
+    CSRF_COOKIE_DOMAIN = "miniprogram.com"
+else:
+    CSRF_COOKIE_DOMAIN = "p-miniprogram.cn"
+
+# todo delete
+# !!!!!!!! For Test !!!!!!!!
 USE_X_FORWARDED_HOST = True
