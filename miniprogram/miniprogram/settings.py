@@ -95,6 +95,8 @@ DATABASES = {
 # Redis
 REDIS_DB_DEFAULT = "default"
 REDIS_DB_SESSION = "session"
+REDIS_DB_WEB_SESSION = "web-session"
+
 
 CACHES = {
     REDIS_DB_DEFAULT: {
@@ -112,8 +114,21 @@ CACHES = {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "PASSWORD": "miniprogram",
         }
-    }
+    },
+    REDIS_DB_WEB_SESSION: {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://redis.miniprogram.info:6379/2",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "PASSWORD": "miniprogram",
+        }
+    },
 }
+
+
+# For Web Session
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = REDIS_DB_WEB_SESSION
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
